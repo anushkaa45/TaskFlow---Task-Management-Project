@@ -18,9 +18,6 @@ public class UserRequestDTO {
     @Size(min = 8, message = "Password must contain at least 8 characters")
     private String password;
 
-
-    // Getters and Setters
-
     public String getName() {
         return name;
     }
