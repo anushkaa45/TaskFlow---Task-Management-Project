@@ -4,9 +4,7 @@ import com.taskflow.dto.request.TaskRequestDTO;
 import com.taskflow.dto.request.TaskUpdateRequestDTO;
 import com.taskflow.dto.response.TaskResponseDTO;
 
-import com.taskflow.entity.Project;
-import com.taskflow.entity.Task;
-import com.taskflow.entity.User;
+import com.taskflow.entity.*;
 
 import com.taskflow.exception.ResourceNotFoundException;
 
@@ -14,6 +12,10 @@ import com.taskflow.repository.ProjectRepository;
 import com.taskflow.repository.TaskRepository;
 import com.taskflow.repository.UserRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -167,4 +169,123 @@ public class TaskService {
 
         taskRepository.delete(task);
     }
+
+
+    @Transactional(readOnly = true)
+    public Page<TaskResponseDTO> getAllTasksWithPagination(
+            int page,
+            int size) {
+
+        // Create pagination request
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("id").descending()
+        );
+
+        // Fetch paginated tasks
+        Page<Task> tasks = taskRepository.findAll(pageable);
+
+        // Convert Task entities into DTOs
+        return tasks.map(this::mapToResponse);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Page<TaskResponseDTO> getTasksByStatus(
+            TaskStatus status,
+            int page,
+            int size) {
+
+        // Create pagination request
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("id").descending()
+        );
+
+        // Find tasks by status
+        Page<Task> tasks =
+                taskRepository.findByStatus(status, pageable);
+
+        // Convert entities into response DTOs
+        return tasks.map(this::mapToResponse);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Page<TaskResponseDTO> getTasksByPriority(
+            TaskPriority priority,
+            int page,
+            int size) {
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("id").descending()
+        );
+
+        Page<Task> tasks =
+                taskRepository.findByPriority(priority, pageable);
+
+        return tasks.map(this::mapToResponse);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Page<TaskResponseDTO> searchTasksByTitle(
+            String title,
+            int page,
+            int size) {
+
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Search title cannot be empty");
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("id").descending()
+        );
+
+        Page<Task> tasks =
+                taskRepository.findByTitleContainingIgnoreCase(
+                        title.trim(), pageable);
+
+        return tasks.map(this::mapToResponse);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Page<TaskResponseDTO> searchAndFilterTasks(
+            String title,
+            TaskStatus status,
+            TaskPriority priority,
+            int page,
+            int size) {
+
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Search title cannot be empty");
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("id").descending()
+        );
+
+        Page<Task> tasks =
+                taskRepository
+                        .findByTitleContainingIgnoreCaseAndStatusAndPriority(
+                                title.trim(),
+                                status,
+                                priority,
+                                pageable
+                        );
+
+        return tasks.map(this::mapToResponse);
+    }
+
 }
