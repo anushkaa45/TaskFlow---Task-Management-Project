@@ -7,6 +7,7 @@ import com.taskflow.dto.response.CommentResponseDTO;
 import com.taskflow.entity.Comment;
 import com.taskflow.entity.Task;
 import com.taskflow.entity.User;
+import com.taskflow.entity.NotificationType;
 
 import com.taskflow.exception.ResourceNotFoundException;
 
@@ -25,15 +26,18 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public CommentService(
             CommentRepository commentRepository,
             TaskRepository taskRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationService notificationService) {
 
         this.commentRepository = commentRepository;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     // Convert Comment entity into response DTO
@@ -50,17 +54,21 @@ public class CommentService {
     }
 
     // Add a comment
+
     @Transactional
     public CommentResponseDTO addComment(CommentRequestDTO request) {
 
+        // 1. Find the task
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Task not found with id: " + request.getTaskId()));
 
+        // 2. Find the user who added the comment
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with id: " + request.getUserId()));
 
+        // 3. Create comment
         Comment comment = new Comment();
 
         comment.setContent(request.getContent());
@@ -69,6 +77,20 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
+        Long assignedUserId = task.getAssignedTo().getId();
+
+        Long commenterId = user.getId();
+
+        if (!assignedUserId.equals(commenterId)) {
+
+            notificationService.createNotification(
+                    assignedUserId,
+                    "A new comment was added to your task: " + task.getTitle(),
+                    NotificationType.NEW_COMMENT
+            );
+        }
+
+        // 8. Return response DTO
         return mapToResponse(savedComment);
     }
 

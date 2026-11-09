@@ -9,6 +9,7 @@ import com.taskflow.exception.ResourceNotFoundException;
 import com.taskflow.repository.ProjectMemberRepository;
 import com.taskflow.repository.ProjectRepository;
 import com.taskflow.repository.UserRepository;
+import com.taskflow.entity.NotificationType;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,18 +22,21 @@ public class ProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public ProjectMemberService(
             ProjectMemberRepository projectMemberRepository,
             ProjectRepository projectRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository, NotificationService notificationService) {
 
         this.projectMemberRepository = projectMemberRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     // Add a user to a project
+
     @Transactional
     public UserResponseDTO addMember(Long projectId, Long userId) {
 
@@ -46,20 +50,25 @@ public class ProjectMemberService {
                         new ResourceNotFoundException(
                                 "User not found with id: " + userId));
 
-        boolean alreadyMember =
-                projectMemberRepository
-                        .existsByProject_IdAndUser_Id(projectId, userId);
+        if (projectMemberRepository
+                .existsByProject_IdAndUser_Id(projectId, userId)) {
 
-        if (alreadyMember) {
             throw new ResourceAlreadyExistsException(
                     "User is already a member of this project");
         }
 
         ProjectMember projectMember = new ProjectMember();
+
         projectMember.setProject(project);
         projectMember.setUser(user);
 
         projectMemberRepository.save(projectMember);
+
+        notificationService.createNotification(
+                userId,
+                "You have been added to the project: " + project.getName(),
+                NotificationType.PROJECT_MEMBER_ADDED
+        );
 
         return new UserResponseDTO(
                 user.getId(),
@@ -69,6 +78,7 @@ public class ProjectMemberService {
                 user.getCreatedAt()
         );
     }
+
 
     // Get all members of a project
     @Transactional(readOnly = true)

@@ -16,8 +16,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.taskflow.entity.NotificationType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.taskflow.entity.NotificationType;
 
 import java.util.List;
 
@@ -27,15 +29,17 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public TaskService(
             TaskRepository taskRepository,
             ProjectRepository projectRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,NotificationService notificationService) {
 
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     // Convert Task entity into TaskResponseDTO
@@ -82,6 +86,12 @@ public class TaskService {
         task.setAssignedTo(user);
 
         Task savedTask = taskRepository.save(task);
+
+        notificationService.createNotification(
+                savedTask.getAssignedTo().getId(),
+                "You have been assigned a new task: " + savedTask.getTitle(),
+                NotificationType.TASK_ASSIGNED
+        );
 
         return mapToResponse(savedTask);
     }
@@ -138,6 +148,7 @@ public class TaskService {
                 .toList();
     }
 
+
     // Update a task
     @Transactional
     public TaskResponseDTO updateTask(Long id, TaskUpdateRequestDTO request) {
@@ -147,6 +158,8 @@ public class TaskService {
                         new ResourceNotFoundException(
                                 "Task not found with id: " + id));
 
+        TaskStatus previousStatus = task.getStatus();
+
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
         task.setStatus(request.getStatus());
@@ -154,6 +167,17 @@ public class TaskService {
         task.setDueDate(request.getDueDate());
 
         Task updatedTask = taskRepository.save(task);
+
+        if (previousStatus != updatedTask.getStatus()) {
+
+            notificationService.createNotification(
+                    updatedTask.getAssignedTo().getId(),
+                    "Your task " + updatedTask.getTitle()
+                            + " status has changed to "
+                            + updatedTask.getStatus(),
+                    NotificationType.TASK_STATUS_CHANGED
+            );
+        }
 
         return mapToResponse(updatedTask);
     }
