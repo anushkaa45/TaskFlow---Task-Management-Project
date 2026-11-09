@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -36,4 +37,52 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             TaskPriority priority,
             Pageable pageable
     );
+
+
+    long countByStatus(TaskStatus status);
+
+    long countByPriority(TaskPriority priority);
+
+    long countByAssignedTo_Id(Long userId);
+
+    long countByAssignedTo_IdAndStatus(
+            Long userId,
+            TaskStatus status
+    );
+
+    long countByAssignedTo_IdAndDueDateBeforeAndStatusNot(
+            Long userId,
+            LocalDate date,
+            TaskStatus status
+    );
+
+    List<Task> findByAssignedTo_IdAndDueDateAfterAndStatusNotOrderByDueDateAsc(
+            Long userId,
+            LocalDate date,
+            TaskStatus status
+    );
+
+
+    long countByProject_CreatedBy_Id(Long managerId);
+
+    long countByProject_CreatedBy_IdAndStatus(
+            Long managerId,
+            TaskStatus status
+    );
+
+    long countByProject_CreatedBy_IdAndPriority(
+            Long managerId,
+            TaskPriority priority
+    );
+
+    long countByProject_CreatedBy_IdAndDueDateBeforeAndStatusNot(
+            Long managerId,
+            LocalDate date,
+            TaskStatus status
+    );
+
+
+    List<Task> findByProject_CreatedBy_Id(Long managerId);
+
+
 }

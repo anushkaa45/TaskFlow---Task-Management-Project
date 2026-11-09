@@ -39,7 +39,7 @@ public class TaskService {
     }
 
     // Convert Task entity into TaskResponseDTO
-    private TaskResponseDTO mapToResponse(Task task) {
+    TaskResponseDTO mapToResponse(Task task) {
 
         return new TaskResponseDTO(
                 task.getId(),
