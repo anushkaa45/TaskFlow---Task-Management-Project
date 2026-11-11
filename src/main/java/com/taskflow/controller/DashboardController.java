@@ -4,50 +4,62 @@ package com.taskflow.controller;
 import com.taskflow.dto.response.dashboard.AdminDashboardResponseDTO;
 import com.taskflow.dto.response.dashboard.ManagerDashboardResponseDTO;
 import com.taskflow.dto.response.dashboard.MemberDashboardResponseDTO;
+import com.taskflow.service.AuthenticatedUserService;
 import com.taskflow.service.DashboardService;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final AuthenticatedUserService authenticatedUserService;
 
-    public DashboardController(DashboardService dashboardService) {
+    // Constructor Injection
+    public DashboardController(
+            DashboardService dashboardService,
+            AuthenticatedUserService authenticatedUserService) {
+
         this.dashboardService = dashboardService;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     // Admin Dashboard
     @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminDashboardResponseDTO> getAdminDashboard() {
 
-        AdminDashboardResponseDTO response =
-                dashboardService.getAdminDashboard();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                dashboardService.getAdminDashboard()
+        );
     }
 
     // Project Manager Dashboard
-    @GetMapping("/manager/{managerId}")
-    public ResponseEntity<ManagerDashboardResponseDTO> getManagerDashboard(
-            @PathVariable Long managerId) {
+    @GetMapping("/manager")
+    @PreAuthorize("hasRole('PROJECT_MANAGER')")
+    public ResponseEntity<ManagerDashboardResponseDTO> getManagerDashboard() {
 
-        ManagerDashboardResponseDTO response =
-                dashboardService.getManagerDashboard(managerId);
+        Long managerId = authenticatedUserService.getCurrentUserId();
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                dashboardService.getManagerDashboard(managerId)
+        );
     }
 
     // Member Dashboard
-    @GetMapping("/member/{userId}")
-    public ResponseEntity<MemberDashboardResponseDTO> getMemberDashboard(
-            @PathVariable Long userId) {
+    @GetMapping("/member")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<MemberDashboardResponseDTO> getMemberDashboard() {
 
-        MemberDashboardResponseDTO response =
-                dashboardService.getMemberDashboard(userId);
+        Long userId = authenticatedUserService.getCurrentUserId();
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                dashboardService.getMemberDashboard(userId)
+        );
     }
 }

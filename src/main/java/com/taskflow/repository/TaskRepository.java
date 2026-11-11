@@ -84,5 +84,31 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByProject_CreatedBy_Id(Long managerId);
 
+    Page<Task> findByProject_CreatedBy_IdAndTitleContainingIgnoreCaseAndStatusAndPriority(
+            Long managerId,
+            String title,
+            TaskStatus status,
+            TaskPriority priority,
+            Pageable pageable
+    );
+
+
+    Page<Task> findByProject_CreatedBy_IdAndStatus(
+            Long managerId,
+            TaskStatus status,
+            Pageable pageable
+    );
+
+    Page<Task> findByProject_CreatedBy_IdAndPriority(
+            Long managerId,
+            TaskPriority priority,
+            Pageable pageable
+    );
+
+    Page<Task> findByProject_CreatedBy_IdAndTitleContainingIgnoreCase(
+            Long managerId,
+            String title,
+            Pageable pageable
+    );
 
 }

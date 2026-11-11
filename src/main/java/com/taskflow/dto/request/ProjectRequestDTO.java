@@ -1,3 +1,4 @@
+
 package com.taskflow.dto.request;
 
 import com.taskflow.entity.ProjectStatus;
@@ -21,9 +22,6 @@ public class ProjectRequestDTO {
     private LocalDate endDate;
 
     private ProjectStatus status;
-
-    @NotNull(message = "Creator user ID is required")
-    private Long createdByUserId;
 
     public ProjectRequestDTO() {
     }
@@ -66,13 +64,5 @@ public class ProjectRequestDTO {
 
     public void setStatus(ProjectStatus status) {
         this.status = status;
-    }
-
-    public Long getCreatedByUserId() {
-        return createdByUserId;
-    }
-
-    public void setCreatedByUserId(Long createdByUserId) {
-        this.createdByUserId = createdByUserId;
     }
 }

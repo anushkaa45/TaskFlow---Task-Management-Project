@@ -1,3 +1,4 @@
+
 package com.taskflow.controller;
 
 import com.taskflow.dto.request.UserRequestDTO;
@@ -9,6 +10,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +25,7 @@ public class UserController {
         this.userService = userService;
     }
 
+    // Public registration
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> registerUser(
             @Valid @RequestBody UserRequestDTO requestDTO) {
@@ -32,6 +35,8 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    // Only ADMIN can view all users
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
 
@@ -40,6 +45,8 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    // Only ADMIN can view a user by ID
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDTO> getUserById(
             @PathVariable Long id) {
@@ -49,6 +56,8 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    // Only ADMIN can update a user
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<UserResponseDTO> updateUser(
             @PathVariable Long id,
@@ -60,6 +69,8 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
+    // Only ADMIN can delete a user
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(
             @PathVariable Long id) {
@@ -69,6 +80,8 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    // Only ADMIN can search users by email
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/email/{email}")
     public ResponseEntity<UserResponseDTO> getUserByEmail(
             @PathVariable String email) {

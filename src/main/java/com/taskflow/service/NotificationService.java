@@ -9,6 +9,7 @@ import com.taskflow.exception.ResourceNotFoundException;
 import com.taskflow.repository.NotificationRepository;
 import com.taskflow.repository.UserRepository;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +20,16 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public NotificationService(
             NotificationRepository notificationRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     // Convert Entity into Response DTO
@@ -69,10 +73,7 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public List<NotificationResponseDTO> getUserNotifications(Long userId) {
 
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException(
-                    "User not found with ID: " + userId);
-        }
+        validateCurrentUser(userId);
 
         return notificationRepository
                 .findByRecipient_IdOrderByCreatedAtDesc(userId)
@@ -85,10 +86,7 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public List<NotificationResponseDTO> getUnreadNotifications(Long userId) {
 
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException(
-                    "User not found with ID: " + userId);
-        }
+        validateCurrentUser(userId);
 
         return notificationRepository
                 .findByRecipient_IdAndIsReadFalseOrderByCreatedAtDesc(userId)
@@ -101,10 +99,7 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public long getUnreadNotificationCount(Long userId) {
 
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException(
-                    "User not found with ID: " + userId);
-        }
+        validateCurrentUser(userId);
 
         return notificationRepository
                 .countByRecipient_IdAndIsReadFalse(userId);
@@ -120,6 +115,8 @@ public class NotificationService {
                         new ResourceNotFoundException(
                                 "Notification not found with ID: " + notificationId));
 
+        validateNotificationOwnership(notification);
+
         notification.setRead(true);
 
         Notification updatedNotification =
@@ -132,10 +129,7 @@ public class NotificationService {
     @Transactional
     public void markAllAsRead(Long userId) {
 
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException(
-                    "User not found with ID: " + userId);
-        }
+        validateCurrentUser(userId);
 
         List<Notification> notifications =
                 notificationRepository
@@ -156,6 +150,32 @@ public class NotificationService {
                         new ResourceNotFoundException(
                                 "Notification not found with ID: " + notificationId));
 
+        validateNotificationOwnership(notification);
+
         notificationRepository.delete(notification);
+    }
+
+    // Validate that the requested user is the logged-in user
+    private void validateCurrentUser(Long userId) {
+
+        Long currentUserId = authenticatedUserService.getCurrentUserId();
+
+        if (!currentUserId.equals(userId)) {
+            throw new AccessDeniedException(
+                    "You cannot access another user's notifications");
+        }
+    }
+
+    // Validate notification ownership
+    private void validateNotificationOwnership(Notification notification) {
+
+        Long currentUserId = authenticatedUserService.getCurrentUserId();
+
+        Long recipientId = notification.getRecipient().getId();
+
+        if (!currentUserId.equals(recipientId)) {
+            throw new AccessDeniedException(
+                    "You cannot access another user's notification");
+        }
     }
 }

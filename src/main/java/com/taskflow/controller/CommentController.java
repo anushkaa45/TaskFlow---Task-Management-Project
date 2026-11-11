@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,7 +24,8 @@ public class CommentController {
         this.commentService = commentService;
     }
 
-    // Add a comment
+    // All authenticated roles can add comments
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'MEMBER')")
     @PostMapping
     public ResponseEntity<CommentResponseDTO> addComment(
             @Valid @RequestBody CommentRequestDTO request) {
@@ -34,7 +36,8 @@ public class CommentController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // Get comments by task ID
+    // All authenticated roles can view comments by task ID
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'MEMBER')")
     @GetMapping("/task/{taskId}")
     public ResponseEntity<List<CommentResponseDTO>> getCommentsByTask(
             @PathVariable Long taskId) {
@@ -43,7 +46,8 @@ public class CommentController {
                 commentService.getCommentsByTask(taskId));
     }
 
-    // Get comments by user ID
+    // All authenticated roles can view comments by user ID
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'MEMBER')")
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<CommentResponseDTO>> getCommentsByUser(
             @PathVariable Long userId) {
@@ -52,7 +56,8 @@ public class CommentController {
                 commentService.getCommentsByUser(userId));
     }
 
-    // Delete a comment
+    // Only ADMIN and PROJECT_MANAGER can delete comments
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'MEMBER')")
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Void> deleteComment(
             @PathVariable Long commentId) {
