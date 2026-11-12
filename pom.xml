@@ -107,6 +107,13 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
+		<!-- Swagger / OpenAPI Documentation -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>3.0.1</version>
+		</dependency>
+
 
 	</dependencies>
 

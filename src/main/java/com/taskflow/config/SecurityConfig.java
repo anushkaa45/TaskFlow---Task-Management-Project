@@ -38,25 +38,35 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
+                // Configure public and protected endpoints
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
                                 "/api/users/register",
-                                "/api/auth/**"
+                                "/api/auth/**",
+
+                                // Swagger / OpenAPI endpoints
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
                         ).permitAll()
 
+                        // All other APIs require JWT authentication
                         .anyRequest().authenticated()
                 )
 
-                // Connect custom error handlers
+                // Custom error handlers
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
 
+                // Stateless JWT authentication
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
+                // Add JWT filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
