@@ -7,6 +7,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -137,6 +138,18 @@ public class GlobalExceptionHandler {
                         HttpStatus.BAD_REQUEST,
                         "Bad Request",
                         "Invalid request body. Check your JSON values, dates, and enum fields."
+                ));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingRequestParameter(
+            MissingServletRequestParameterException ex) {
+
+        return ResponseEntity.badRequest()
+                .body(createErrorResponse(
+                        HttpStatus.BAD_REQUEST,
+                        "Bad Request",
+                        "Required parameter is missing: " + ex.getParameterName()
                 ));
     }
 

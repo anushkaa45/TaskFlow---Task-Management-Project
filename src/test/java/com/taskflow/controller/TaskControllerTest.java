@@ -434,4 +434,136 @@ class TaskControllerTest {
                         anyInt(),
                         anyInt());
     }
+
+
+    // Test 23: Pagination size cannot be zero
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getAllTasksWithPagination_zeroSize() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/page")
+                        .param("page", "0")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .getAllTasksWithPagination(anyInt(), anyInt());
+    }
+
+    // Test 24: Pagination size cannot exceed 100
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getAllTasksWithPagination_sizeGreaterThan100() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/page")
+                        .param("page", "0")
+                        .param("size", "101"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .getAllTasksWithPagination(anyInt(), anyInt());
+    }
+
+    // Test 25: Invalid status parameter
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getTasksByStatus_invalidStatus() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/filter/status")
+                        .param("status", "INVALID_STATUS")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .getTasksByStatus(any(TaskStatus.class), anyInt(), anyInt());
+    }
+
+    // Test 26: Invalid priority parameter
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getTasksByPriority_invalidPriority() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/filter/priority")
+                        .param("priority", "INVALID_PRIORITY")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .getTasksByPriority(any(TaskPriority.class), anyInt(), anyInt());
+    }
+
+    // Test 27: Search without title
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void searchTasksByTitle_missingTitle() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/search")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .searchTasksByTitle(anyString(), anyInt(), anyInt());
+    }
+
+    // Test 28: Search with invalid size
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void searchTasksByTitle_invalidSize() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/search")
+                        .param("title", "JWT")
+                        .param("page", "0")
+                        .param("size", "101"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .searchTasksByTitle(anyString(), anyInt(), anyInt());
+    }
+
+    // Test 29: Combined search with missing status
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void searchAndFilterTasks_missingStatus() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/search/filter")
+                        .param("title", "JWT")
+                        .param("priority", "HIGH")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .searchAndFilterTasks(
+                        anyString(),
+                        any(TaskStatus.class),
+                        any(TaskPriority.class),
+                        anyInt(),
+                        anyInt());
+    }
+
+    // Test 30: Combined search with invalid priority
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void searchAndFilterTasks_invalidPriority() throws Exception {
+
+        mockMvc.perform(get("/api/tasks/search/filter")
+                        .param("title", "JWT")
+                        .param("status", "IN_PROGRESS")
+                        .param("priority", "INVALID_PRIORITY")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never())
+                .searchAndFilterTasks(
+                        anyString(),
+                        any(TaskStatus.class),
+                        any(TaskPriority.class),
+                        anyInt(),
+                        anyInt());
+    }
+
 }

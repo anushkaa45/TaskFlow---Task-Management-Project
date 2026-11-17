@@ -424,4 +424,243 @@ class ProjectControllerTest {
 
         verify(projectService, times(1)).getAllProjects();
     }
+
+
+    // Test 21: Create project with blank description
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createProject_blankDescription() throws Exception {
+
+        String request = """
+                {
+                    "name": "TaskFlow",
+                    "description": "",
+                    "startDate": "2026-11-17",
+                    "endDate": "2026-12-17",
+                    "status": "PLANNING"
+                }
+                """;
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .createProject(any(ProjectRequestDTO.class));
+    }
+
+    // Test 22: Create project without start date
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createProject_missingStartDate() throws Exception {
+
+        String request = """
+                {
+                    "name": "TaskFlow",
+                    "description": "Project management application",
+                    "endDate": "2026-12-17",
+                    "status": "PLANNING"
+                }
+                """;
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .createProject(any(ProjectRequestDTO.class));
+    }
+
+    // Test 23: Create project without end date
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createProject_missingEndDate() throws Exception {
+
+        String request = """
+                {
+                    "name": "TaskFlow",
+                    "description": "Project management application",
+                    "startDate": "2026-11-17",
+                    "status": "PLANNING"
+                }
+                """;
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .createProject(any(ProjectRequestDTO.class));
+    }
+
+    // Test 24: Create project with name shorter than 3 characters
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createProject_nameTooShort() throws Exception {
+
+        String request = """
+                {
+                    "name": "AB",
+                    "description": "Project management application",
+                    "startDate": "2026-11-17",
+                    "endDate": "2026-12-17",
+                    "status": "PLANNING"
+                }
+                """;
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .createProject(any(ProjectRequestDTO.class));
+    }
+
+    // Test 25: Create project with name longer than 100 characters
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createProject_nameTooLong() throws Exception {
+
+        String longName = "A".repeat(101);
+
+        String request = """
+                {
+                    "name": "%s",
+                    "description": "Project management application",
+                    "startDate": "2026-11-17",
+                    "endDate": "2026-12-17",
+                    "status": "PLANNING"
+                }
+                """.formatted(longName);
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .createProject(any(ProjectRequestDTO.class));
+    }
+
+    // Test 26: Update project with blank description
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateProject_blankDescription() throws Exception {
+
+        String request = """
+                {
+                    "name": "Updated Project",
+                    "description": "",
+                    "startDate": "2026-11-17",
+                    "endDate": "2026-12-17",
+                    "status": "IN_PROGRESS"
+                }
+                """;
+
+        mockMvc.perform(put("/api/projects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .updateProject(eq(1L), any(ProjectUpdateRequestDTO.class));
+    }
+
+    // Test 27: Update project without start date
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateProject_missingStartDate() throws Exception {
+
+        String request = """
+                {
+                    "name": "Updated Project",
+                    "description": "Updated description",
+                    "endDate": "2026-12-17",
+                    "status": "IN_PROGRESS"
+                }
+                """;
+
+        mockMvc.perform(put("/api/projects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .updateProject(eq(1L), any(ProjectUpdateRequestDTO.class));
+    }
+
+    // Test 28: Update project without end date
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateProject_missingEndDate() throws Exception {
+
+        String request = """
+                {
+                    "name": "Updated Project",
+                    "description": "Updated description",
+                    "startDate": "2026-11-17",
+                    "status": "IN_PROGRESS"
+                }
+                """;
+
+        mockMvc.perform(put("/api/projects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .updateProject(eq(1L), any(ProjectUpdateRequestDTO.class));
+    }
+
+    // Test 29: Update project without status
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateProject_missingStatus() throws Exception {
+
+        String request = """
+                {
+                    "name": "Updated Project",
+                    "description": "Updated description",
+                    "startDate": "2026-11-17",
+                    "endDate": "2026-12-17"
+                }
+                """;
+
+        mockMvc.perform(put("/api/projects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .updateProject(eq(1L), any(ProjectUpdateRequestDTO.class));
+    }
+
+    // Test 30: Update project with name shorter than 3 characters
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateProject_nameTooShort() throws Exception {
+
+        String request = """
+                {
+                    "name": "AB",
+                    "description": "Updated description",
+                    "startDate": "2026-11-17",
+                    "endDate": "2026-12-17",
+                    "status": "IN_PROGRESS"
+                }
+                """;
+
+        mockMvc.perform(put("/api/projects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never())
+                .updateProject(eq(1L), any(ProjectUpdateRequestDTO.class));
+    }
+
 }
