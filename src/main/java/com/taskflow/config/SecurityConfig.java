@@ -1,8 +1,12 @@
 
 package com.taskflow.config;
 
+import com.taskflow.service.GoogleOidcUserService;
+
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -21,52 +25,95 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
+    private final GoogleOidcUserService googleOidcUserService;
+    private final GoogleOAuth2SuccessHandler googleSuccessHandler;
+
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             CustomAuthenticationEntryPoint authenticationEntryPoint,
-            CustomAccessDeniedHandler accessDeniedHandler) {
+            CustomAccessDeniedHandler accessDeniedHandler,
+            GoogleOidcUserService googleOidcUserService,
+            GoogleOAuth2SuccessHandler googleSuccessHandler) {
 
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
+        this.googleOidcUserService = googleOidcUserService;
+        this.googleSuccessHandler = googleSuccessHandler;
     }
 
+    // Google OAuth2 login and callback chain
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
+    @Order(1)
+    public SecurityFilterChain oauthSecurityFilterChain(
+            HttpSecurity http) throws Exception {
+
+        http
+                .securityMatcher(
+                        "/oauth2/**",
+                        "/login/oauth2/**"
+                )
+                .authorizeHttpRequests(auth ->
+                        auth.anyRequest().permitAll()
+                )
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.IF_REQUIRED
+                        )
+                )
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo ->
+                                userInfo.oidcUserService(
+                                        googleOidcUserService
+                                )
+                        )
+                        .successHandler(googleSuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            response.setStatus(
+                                    HttpServletResponse.SC_UNAUTHORIZED
+                            );
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write(
+                                    "{\"message\":\"Google authentication failed\"}"
+                            );
+                        })
+                );
+
+        return http.build();
+    }
+
+    // Existing stateless JWT API chain
+    @Bean
+    @Order(2)
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
 
-                // Configure public and protected endpoints
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers(
                                 "/api/users/register",
                                 "/api/auth/**",
-
-                                // Swagger / OpenAPI endpoints
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"
                         ).permitAll()
-
-                        // All other APIs require JWT authentication
                         .anyRequest().authenticated()
                 )
 
-                // Custom error handlers
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
 
-                // Stateless JWT authentication
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
 
-                // Add JWT filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class

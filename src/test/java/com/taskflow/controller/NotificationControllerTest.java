@@ -23,8 +23,12 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration;
 
-@WebMvcTest(NotificationController.class)
+@WebMvcTest(
+        value = NotificationController.class,
+        excludeAutoConfiguration = OAuth2ClientWebSecurityAutoConfiguration.class
+)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(NotificationControllerTest.MethodSecurityTestConfig.class)
 class NotificationControllerTest {

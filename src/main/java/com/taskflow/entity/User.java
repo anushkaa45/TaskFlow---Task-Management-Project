@@ -1,6 +1,8 @@
+
 package com.taskflow.entity;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,12 +19,20 @@ public class User {
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(nullable = false)
+    // Google-only accounts do not have a local password
+    @Column(nullable = true)
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private UserRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 20)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @Column(name = "provider_subject", unique = true, length = 255)
+    private String providerSubject;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -30,27 +40,19 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-
-    // Automatically runs before a new user is saved
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
-    // Automatically runs before an existing user is updated
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
 
-
-    // Default constructor required by JPA
     public User() {
     }
-
-
-    // Getters and Setters
 
     public Long getId() {
         return id;
@@ -90,6 +92,22 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public AuthProvider getAuthProvider() {
+        return authProvider;
+    }
+
+    public void setAuthProvider(AuthProvider authProvider) {
+        this.authProvider = authProvider;
+    }
+
+    public String getProviderSubject() {
+        return providerSubject;
+    }
+
+    public void setProviderSubject(String providerSubject) {
+        this.providerSubject = providerSubject;
     }
 
     public LocalDateTime getCreatedAt() {

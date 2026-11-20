@@ -7,15 +7,23 @@ import com.taskflow.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
+    public CustomUserDetailsService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
+
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -25,13 +33,24 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
-                                "User not found with email: " + email
+                                "Invalid email or password"
                         )
                 );
 
+        // Google-only accounts do not have local passwords.
+        // Generate an unusable dummy password so Spring Security
+        // never receives a null password.
+        String storedPassword = user.getPassword();
+
+        if (storedPassword == null) {
+            storedPassword = passwordEncoder.encode(
+                    UUID.randomUUID().toString()
+            );
+        }
+
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
-                .password(user.getPassword())
+                .password(storedPassword)
                 .authorities("ROLE_" + user.getRole().name())
                 .build();
     }

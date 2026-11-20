@@ -4,6 +4,7 @@ package com.taskflow.service;
 import com.taskflow.dto.request.UserRequestDTO;
 import com.taskflow.dto.request.UserUpdateRequestDTO;
 import com.taskflow.dto.response.UserResponseDTO;
+import com.taskflow.entity.AuthProvider;
 import com.taskflow.entity.User;
 import com.taskflow.entity.UserRole;
 import com.taskflow.exception.ResourceAlreadyExistsException;
@@ -61,6 +62,7 @@ public class UserService {
         );
     }
 
+    // Local user registration
     public UserResponseDTO registerUser(UserRequestDTO requestDTO) {
 
         if (userRepository.existsByEmail(requestDTO.getEmail())) {
@@ -75,6 +77,9 @@ public class UserService {
         user.setEmail(requestDTO.getEmail());
         user.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
         user.setRole(UserRole.MEMBER);
+
+        // Explicitly mark this account as a local account
+        user.setAuthProvider(AuthProvider.LOCAL);
 
         User savedUser = userRepository.save(user);
 

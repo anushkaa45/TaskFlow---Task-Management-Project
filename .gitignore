@@ -41,3 +41,10 @@ build/
 # Local configuration
 application-local.properties
 application-secret.properties
+
+# Google OAuth and JWT secrets
+application.properties
+application.yml
+application.yaml
+*.pem
+*.key

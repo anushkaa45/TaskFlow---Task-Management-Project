@@ -32,8 +32,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration;
 
-@WebMvcTest(UserController.class)
+@WebMvcTest(
+        value = UserController.class,
+        excludeAutoConfiguration = OAuth2ClientWebSecurityAutoConfiguration.class
+)
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
         GlobalExceptionHandler.class,
