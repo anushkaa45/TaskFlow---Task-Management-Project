@@ -2,9 +2,9 @@
 package com.taskflow.config;
 
 import com.taskflow.entity.AuthProvider;
+import com.taskflow.entity.User;
 import com.taskflow.repository.UserRepository;
-import com.taskflow.service.CustomUserDetailsService;
-import com.taskflow.service.JwtService;
+import com.taskflow.service.OAuthLoginCodeService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -23,20 +24,17 @@ public class GoogleOAuth2SuccessHandler
         implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
-    private final CustomUserDetailsService userDetailsService;
-    private final JwtService jwtService;
+    private final OAuthLoginCodeService codeService;
 
-    @Value("${jwt.expiration}")
-    private long expiration;
+    @Value("${app.frontend.oauth-callback-url}")
+    private String frontendCallbackUrl;
 
     public GoogleOAuth2SuccessHandler(
             UserRepository userRepository,
-            CustomUserDetailsService userDetailsService,
-            JwtService jwtService) {
+            OAuthLoginCodeService codeService) {
 
         this.userRepository = userRepository;
-        this.userDetailsService = userDetailsService;
-        this.jwtService = jwtService;
+        this.codeService = codeService;
     }
 
     @Override
@@ -46,9 +44,17 @@ public class GoogleOAuth2SuccessHandler
             Authentication authentication)
             throws IOException, ServletException {
 
-        String googleSubject = authentication.getName();
+        if (!(authentication.getPrincipal() instanceof OidcUser oidcUser)) {
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Invalid Google authentication"
+            );
+            return;
+        }
 
-        var user = userRepository
+        String googleSubject = oidcUser.getSubject();
+
+        User user = userRepository
                 .findByAuthProviderAndProviderSubject(
                         AuthProvider.GOOGLE,
                         googleSubject
@@ -59,19 +65,14 @@ public class GoogleOAuth2SuccessHandler
                         )
                 );
 
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(user.getEmail());
+        String code = codeService.createCode(user);
 
-        String token = jwtService.generateToken(userDetails);
+        // Send the temporary code in the URL fragment.
+        // The fragment is not sent in HTTP requests to the server.
+        String redirectUrl = frontendCallbackUrl + "#code=" + code;
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
-        response.getWriter().write(
-                "{\"token\":\"" + token
-                        + "\",\"tokenType\":\"Bearer\""
-                        + ",\"expiresIn\":" + expiration + "}"
-        );
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Pragma", "no-cache");
+        response.sendRedirect(redirectUrl);
     }
 }
